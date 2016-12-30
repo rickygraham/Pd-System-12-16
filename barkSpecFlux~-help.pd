@@ -1,0 +1,157 @@
+#N canvas 350 94 1183 666 10;
+#X obj 174 155 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X text 785 488 See timbreID helpfile:;
+#X obj 787 508 timbreID;
+#X obj 85 72 *~;
+#X obj 114 72 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X obj 137 72 *~;
+#X obj 166 72 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X floatatom 85 343 10 0 0 0 - - specFlux, f 10;
+#N canvas 587 64 517 376 attack-detection 0;
+#X obj 33 289 select 1;
+#X obj 33 330 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X floatatom 65 244 5 0 0 0 - - -, f 5;
+#X obj 33 69 adc~;
+#X obj 66 118 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X text 88 118 Turn on for continuous analysis;
+#X obj 66 148 metro 5.80499;
+#X text 25 8 Spectral flux can be used for basic attack detection.
+Turn on the toggle below to check it out.;
+#X obj 33 268 > 0.6;
+#X text 108 241 If 0.6 is too low or high \, try a different threshhold.
+;
+#X obj 33 187 barkSpecFlux~ 1024 256;
+#X connect 0 0 1 0;
+#X connect 2 0 8 1;
+#X connect 3 0 10 0;
+#X connect 4 0 6 0;
+#X connect 6 0 10 0;
+#X connect 8 0 0 0;
+#X connect 10 0 8 0;
+#X restore 456 390 pd attack-detection;
+#X text 215 140 Activate a signal above and bang to output its flux.
+, f 19;
+#X obj 1 -13 cnv 10 400 10 empty empty empty 20 12 0 14 -233017 -66577
+0;
+#X obj 1 -13 cnv 10 10 400 empty empty empty 20 12 0 14 -233017 -66577
+0;
+#N canvas 322 87 874 602 other-settings 0;
+#X text 174 109 Change window size.;
+#X obj 299 249 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X msg 299 267 normalize \$1;
+#X text 337 248 Normalize spectrum. Default: ON.;
+#X obj 362 332 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X text 400 331 Squared difference vs. Absolute value of difference.
+;
+#X msg 253 180 separation 512;
+#X obj 63 52 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
+;
+#X msg 63 72 power_spectrum \$1;
+#X text 94 52 Use power instead of magnitude;
+#X obj 124 525 outlet;
+#X text 363 179 Change distance between analysis windows in samples.
+;
+#X obj 379 444 hradio 15 1 0 5 empty empty empty 0 -8 0 10 -262144
+-1 -1 0;
+#X msg 379 464 window_function \$1;
+#X text 377 407 Change windowing function. Rectangular (0) \, Blackman
+(1) \, Cosine (2) \, Hamming (3) \, or Hann (4). (default: Hann);
+#X msg 176 130 window 2048;
+#X msg 362 350 squared_diff \$1;
+#X connect 1 0 2 0;
+#X connect 2 0 10 0;
+#X connect 4 0 16 0;
+#X connect 6 0 10 0;
+#X connect 7 0 8 0;
+#X connect 8 0 10 0;
+#X connect 12 0 13 0;
+#X connect 13 0 10 0;
+#X connect 15 0 10 0;
+#X connect 16 0 10 0;
+#X restore 176 230 pd other-settings;
+#X text 642 297 This feature can be sent to the timbreID external in
+order to identify percussive timbres in real time.;
+#X text 642 337 Audio buffering and windowing are taken care of by
+the external \, so there is no need for tabreceive~ or block~. You
+can set the window size with a creation argument \, or change it with
+the "window" message. The second creation argument specifies the separation
+between the two analysis windows in samples. This does not need to
+be a power of two. It can be changed on the fly with the "separation"
+message.;
+#X text 642 27 Typically \, spectral flux is the sum of squared difference
+between two successive magnitude spectra. specFlux~ gives you the option
+of taking the absolute value of differences rather than squaring so
+that the final result is a bit larger. This is the default configuration.
+The range of values for flux depends on frame separation. With the
+default frame separation of a quarter window \, the flux of noise~
+is higher than that of a sinusoid.;
+#X text 642 147 specFlux~ reports the full list of differences (i.e.
+\, (N/2)+1 bins) at the right outlet \, and the sum of that list at
+the left outlet. You get a lot more detailed information about how
+a spectrum is changing with the right outlet if you have a reason to
+use it.;
+#X text 642 227 In the [attack-detection] sub-patch \, the left outlet
+is used as an attack detector. bonk~ and timbreID's bark~ objects are
+much better designed for this purpose - the sub-patch here is more
+of a proof of concept.;
+#X obj 238 440 list prepend 0;
+#N canvas 0 22 450 278 (subpatch) 0;
+#X array bin-diffs 47 float 0;
+#X coords 0 0.1 46 -0.1 200 140 1;
+#X restore 379 70 graph;
+#X obj 238 461 s bin-diffs;
+#X obj 137 41 osc~ 440;
+#X obj 238 336 t l l;
+#X msg 277 391 \; bin-diffs resize \$1 \;;
+#X obj 277 368 list length;
+#X text 268 294 Creation arguments are window size \, Bark spacing
+\, and separation in samples between analysis windows.;
+#X obj 85 41 noise~;
+#X text 398 467 Yeah \, looks like filter_freqs only posts the frequencies
+to the post window \, so you can’t use them in the patch. Try this
+[bark2freq] \, and if your filterbank is spaced in 0.5 barks \, you
+can get the boundary frequencies of the filters by putting the boundary
+values in Barks into [bark2freq]. The first band’s boundaries are
+0 and 1 Bark \, the 2nd band is 0.5 to 1.5 Barks \, and so on. One
+thing I haven’t implemented yet in [bark2freq] though is a special
+case for very low and very high Bark values. I had that commented out
+in the code when I compiled this one for you. But it should be good
+enough for now.;
+#X obj 21 563 bark2freq;
+#X floatatom 21 540 5 0 0 0 - - -, f 5;
+#X floatatom 21 587 5 0 0 0 - - -, f 5;
+#X text 36 366 sum of the abs of change in \; energy of bands;
+#X text 38 394 mag units?;
+#X obj 85 303 barkSpecFlux~ 1024 0.5 256;
+#X text 107 497 each filter band's energy change;
+#X text 108 515 delta - 1st order;
+#X text 155 532 spectrum delta;
+#X text 157 549 bands / determined by bark 0.5;
+#X text 156 586 0.5 to 1.5 - 78 - 160.5;
+#X text 156 570 0 to 1 - 39 to 118;
+#X text 136 603 overlapping at 78 through to 118;
+#X text 33 623 future versions may accommodate dif overlap settings
+;
+#X connect 0 0 33 0;
+#X connect 3 0 33 0;
+#X connect 4 0 3 1;
+#X connect 5 0 33 0;
+#X connect 6 0 5 1;
+#X connect 12 0 33 0;
+#X connect 18 0 20 0;
+#X connect 21 0 5 0;
+#X connect 22 0 18 0;
+#X connect 22 1 24 0;
+#X connect 24 0 23 0;
+#X connect 26 0 3 0;
+#X connect 28 0 30 0;
+#X connect 29 0 28 0;
+#X connect 33 0 7 0;
+#X connect 33 1 22 0;
